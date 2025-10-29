@@ -50,9 +50,12 @@ export default function Whiteboard() {
           event.color
         );
       }
+
       if (!event.isDrawing) {
+        // keep last position for smooth stroke
         lastRemoteRef.current = { x: event.x, y: event.y };
       } else {
+        // stroke ended — reset
         lastRemoteRef.current = { x: null, y: null };
       }
     }
