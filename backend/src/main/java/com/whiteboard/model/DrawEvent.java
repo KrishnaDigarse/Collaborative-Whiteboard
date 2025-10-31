@@ -1,6 +1,6 @@
 package com.whiteboard.model;
 
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +10,7 @@ public class DrawEvent {
     private double x;
     private double y;
     private String color;
+    @JsonProperty("isDrawing")
     private boolean isDrawing;
     private String roomId;
 
