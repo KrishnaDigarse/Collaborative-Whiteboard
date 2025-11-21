@@ -13,6 +13,10 @@ public class DrawEvent {
     @JsonProperty("isDrawing")
     private boolean isDrawing;
     private String roomId;
+    private String drawingMode;
+    private String toolType;
+    private int brushSize;
+    private ShapeData shapeData;
 
     public DrawEvent() {}
 
@@ -21,5 +25,25 @@ public class DrawEvent {
         this.y = y;
         this.color = color;
         this.isDrawing = isDrawing;
+    }
+
+    @Getter
+    @Setter
+    public static class ShapeData {
+        private double startX;
+        private double startY;
+        private double endX;
+        private double endY;
+        private String shape;
+
+        public ShapeData() {}
+
+        public ShapeData(double startX, double startY, double endX, double endY, String shape) {
+            this.startX = startX;
+            this.startY = startY;
+            this.endX = endX;
+            this.endY = endY;
+            this.shape = shape;
+        }
     }
 }

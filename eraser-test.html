@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Eraser Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        canvas {
+            border: 2px solid white;
+            cursor: crosshair;
+            display: block;
+            background: black;
+        }
+        button {
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background: #555;
+            color: white;
+            transition: all 0.2s;
+        }
+        button.active {
+            background: #0066cc;
+        }
+        button:hover {
+            background: #666;
+        }
+        button.active:hover {
+            background: #0050aa;
+        }
+        .container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="color: white;">Eraser Test - Draw with Pen, Erase with Eraser</h2>
+    <div class="container">
+        <button id="penBtn" class="active">✏️ Pen</button>
+        <button id="eraserBtn">🧹 Eraser</button>
+        <input type="range" id="sizeSlider" min="1" max="20" value="3" style="width: 150px;">
+        <span id="sizeLabel" style="color: white;">Size: 3</span>
+    </div>
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const penBtn = document.getElementById('penBtn');
+        const eraserBtn = document.getElementById('eraserBtn');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const sizeLabel = document.getElementById('sizeLabel');
+
+        let isDrawing = false;
+        let mode = 'pen';
+        let size = 3;
+
+        // Initialize canvas
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Button handlers
+        penBtn.addEventListener('click', () => {
+            mode = 'pen';
+            penBtn.classList.add('active');
+            eraserBtn.classList.remove('active');
+        });
+
+        eraserBtn.addEventListener('click', () => {
+            mode = 'eraser';
+            eraserBtn.classList.add('active');
+            penBtn.classList.remove('active');
+        });
+
+        sizeSlider.addEventListener('input', (e) => {
+            size = parseInt(e.target.value);
+            sizeLabel.textContent = 'Size: ' + size;
+        });
+
+        // Drawing handlers
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (mode === 'pen') {
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = size;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            } else if (mode === 'eraser') {
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (mode === 'pen') {
+                ctx.quadraticCurveTo(x, y, (x + e.clientX - rect.left) / 2, (y + e.clientY - rect.top) / 2);
+                ctx.stroke();
+            } else if (mode === 'eraser') {
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+            if (mode === 'pen') {
+                ctx.closePath();
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+            if (mode === 'pen') {
+                ctx.closePath();
+            }
+        });
+    </script>
+</body>
+</html>
