@@ -31,7 +31,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[url('/bg-7.jpg')] bg-cover bg-center bg-fixed">
+    <div className="min-h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-fixed">
       <div className="w-full h-screen overflow-hidden md:flex justify-center">
         <div className="flex items-center justify-center">
           <h1 className="md:text-7xl font-black text-transparent bg-linear-to-r from-white via-grey-500 to-zinc-800 bg-clip-text mt-10 text-3xl">
