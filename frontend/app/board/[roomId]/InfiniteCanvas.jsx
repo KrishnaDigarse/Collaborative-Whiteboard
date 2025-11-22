@@ -5,7 +5,15 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/ws';
+const getBackendUrl = () => {
+  const url = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (url && !url.startsWith('http')) {
+    return `https://${url}/ws`;
+  }
+  return url || 'http://localhost:8080/ws';
+};
+
+const BACKEND_URL = getBackendUrl();
 
 export default function InfiniteCanvas() {
   const params = useParams();

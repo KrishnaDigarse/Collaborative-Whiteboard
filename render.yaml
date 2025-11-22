@@ -6,11 +6,11 @@ services:
     rootDir: backend
     plan: free
     envVars:
-      - key: cors.allowed-origins
+      - key: CORS_ALLOWED_ORIGINS
         fromService:
           type: web
           name: whiteboard-frontend
-          property: url
+          property: host
       - key: PORT
         value: 8080
 
@@ -27,6 +27,6 @@ services:
         fromService:
           type: web
           name: whiteboard-backend
-          property: url
+          property: host
       - key: NODE_VERSION
         value: 20.11.0
