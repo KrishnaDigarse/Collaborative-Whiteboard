@@ -6,7 +6,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 const getBackendUrl = () => {
-  const url = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const url = "whiteboard-backend-q24z.onrender.com";
   if (url && !url.startsWith('http')) {
     return `https://${url}/ws`;
   }
