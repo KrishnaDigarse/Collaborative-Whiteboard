@@ -20,7 +20,21 @@ public class WhiteboardService {
      * Add an item to the board or update it
      */
     public void addOrUpdateItem(String roomId, BoardItem item) {
-        roomItems.computeIfAbsent(roomId, k -> new CopyOnWriteArrayList<>()).add(item);
+        List<BoardItem> items = roomItems.computeIfAbsent(roomId, k -> new CopyOnWriteArrayList<>());
+
+        // Check if item exists and replace it (to handle updates/moves)
+        boolean found = false;
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).getId().equals(item.getId())) {
+                items.set(i, item);
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            items.add(item);
+        }
     }
 
     /**

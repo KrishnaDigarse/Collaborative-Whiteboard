@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const BACKEND_URL = 'http://localhost:8080/ws';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/ws';
 
 export default function InfiniteCanvas() {
   const params = useParams();
@@ -18,7 +18,8 @@ export default function InfiniteCanvas() {
   const [items, setItems] = useState([]); // All board items (strokes, shapes)
   const [cursors, setCursors] = useState({}); // { userId: { x, y, userName } }
   const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
-  const [tool, setTool] = useState('PEN'); // PEN, RECTANGLE, CIRCLE, TEXT, PAN
+  const [tool, setTool] = useState('PEN'); // PEN, RECTANGLE, CIRCLE, LINE, ARROW, TEXT, PAN, ERASER
+  const [eraserType, setEraserType] = useState('STANDARD'); // STANDARD (Mask), OBJECT (Delete)
   const [color, setColor] = useState('#ffffff');
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [isConnected, setIsConnected] = useState(false);
@@ -46,6 +47,62 @@ export default function InfiniteCanvas() {
       y: worldY * camera.zoom + camera.y,
     };
   }, [camera]);
+
+  // --- Hit Testing ---
+  const isPointInItem = (x, y, item) => {
+    const tolerance = 5 / camera.zoom; // Adjust tolerance based on zoom
+
+    if (item.type === 'RECTANGLE') {
+      const minX = Math.min(item.startX, item.endX);
+      const maxX = Math.max(item.startX, item.endX);
+      const minY = Math.min(item.startY, item.endY);
+      const maxY = Math.max(item.startY, item.endY);
+      // Check if point is near the border (hollow rectangle)
+      const outer = (x >= minX - tolerance && x <= maxX + tolerance && y >= minY - tolerance && y <= maxY + tolerance);
+      const inner = (x >= minX + tolerance && x <= maxX - tolerance && y >= minY + tolerance && y <= maxY - tolerance);
+      return outer && !inner;
+    } else if (item.type === 'CIRCLE') {
+      const radius = Math.sqrt(Math.pow(item.endX - item.startX, 2) + Math.pow(item.endY - item.startY, 2));
+      const dist = Math.sqrt(Math.pow(x - item.startX, 2) + Math.pow(y - item.startY, 2));
+      return Math.abs(dist - radius) <= tolerance;
+    } else if (item.type === 'PEN') {
+      if (!item.points) return false;
+      for (let i = 0; i < item.points.length - 1; i++) {
+        const p1 = item.points[i];
+        const p2 = item.points[i + 1];
+        if (isPointNearLine(x, y, p1, p2, tolerance)) return true;
+      }
+      return false;
+    } else if (item.type === 'LINE' || item.type === 'ARROW') {
+      const p1 = { x: item.startX, y: item.startY };
+      const p2 = { x: item.endX, y: item.endY };
+      return isPointNearLine(x, y, p1, p2, tolerance);
+    } else if (item.type === 'TEXT') {
+      // Approximate text bounds (very rough)
+      const width = (item.text?.length || 0) * (item.fontSize || 20) * 0.6;
+      const height = (item.fontSize || 20);
+      return x >= item.startX && x <= item.startX + width && y >= item.startY - height && y <= item.startY;
+    }
+    return false;
+  };
+
+  const isPointNearLine = (x, y, p1, p2, tolerance) => {
+    const A = x - p1.x;
+    const B = y - p1.y;
+    const C = p2.x - p1.x;
+    const D = p2.y - p1.y;
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    if (len_sq !== 0) param = dot / len_sq;
+    let xx, yy;
+    if (param < 0) { xx = p1.x; yy = p1.y; }
+    else if (param > 1) { xx = p2.x; yy = p2.y; }
+    else { xx = p1.x + param * C; yy = p1.y + param * D; }
+    const dx = x - xx;
+    const dy = y - yy;
+    return (dx * dx + dy * dy) <= tolerance * tolerance;
+  };
 
   // --- Rendering ---
   const render = useCallback(() => {
@@ -94,6 +151,26 @@ export default function InfiniteCanvas() {
         ctx.beginPath();
         ctx.arc(item.startX, item.startY, radius, 0, 2 * Math.PI);
         ctx.stroke();
+      } else if (item.type === 'LINE') {
+        ctx.moveTo(item.startX, item.startY);
+        ctx.lineTo(item.endX, item.endY);
+        ctx.stroke();
+      } else if (item.type === 'ARROW') {
+        ctx.moveTo(item.startX, item.startY);
+        ctx.lineTo(item.endX, item.endY);
+        ctx.stroke();
+
+        // Arrowhead
+        const angle = Math.atan2(item.endY - item.startY, item.endX - item.startX);
+        const headLength = 20 / camera.zoom * (item.strokeWidth / 2); // Scale with zoom/width roughly
+        const actualHeadLength = Math.max(10, headLength);
+
+        ctx.beginPath();
+        ctx.moveTo(item.endX, item.endY);
+        ctx.lineTo(item.endX - actualHeadLength * Math.cos(angle - Math.PI / 6), item.endY - actualHeadLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(item.endX, item.endY);
+        ctx.lineTo(item.endX - actualHeadLength * Math.cos(angle + Math.PI / 6), item.endY - actualHeadLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
       } else if (item.type === 'TEXT' && item.text) {
         ctx.fillText(item.text, item.startX, item.startY);
       }
@@ -103,7 +180,7 @@ export default function InfiniteCanvas() {
     Object.entries(cursors).forEach(([userId, cursor]) => {
       if (userId === myUserIdRef.current) return; // Don't draw own cursor
 
-      ctx.fillStyle = cursor.color || '#ff0000'; // Could assign random colors based on ID
+      ctx.fillStyle = cursor.color || '#ff0000';
       ctx.beginPath();
       ctx.arc(cursor.x, cursor.y, 5 / camera.zoom, 0, 2 * Math.PI);
       ctx.fill();
@@ -230,6 +307,7 @@ export default function InfiniteCanvas() {
     lastMousePosRef.current = { x: clientX, y: clientY };
 
     if (tool === 'TEXT') {
+      e.preventDefault(); // Prevent canvas from stealing focus immediately
       setTextInput({ x: clientX, y: clientY, visible: true, value: '', worldX: worldPos.x, worldY: worldPos.y });
       return;
     }
@@ -240,20 +318,45 @@ export default function InfiniteCanvas() {
       return;
     }
 
-    // Start Drawing
+    // Handle Object Eraser
+    if (tool === 'ERASER' && eraserType === 'OBJECT') {
+      const hitItem = items.slice().reverse().find(item => isPointInItem(worldPos.x, worldPos.y, item));
+      if (hitItem) {
+        // Optimistic update
+        setItems(prev => prev.filter(i => i.id !== hitItem.id));
+        // Send Delete
+        if (stompClientRef.current) {
+          stompClientRef.current.publish({
+            destination: `/app/board/${roomId}`,
+            body: JSON.stringify({ type: 'DELETE', id: hitItem.id })
+          });
+        }
+      }
+      return; // Don't start a drawing stroke
+    }
+
+    // Start Drawing (Pen or Standard Eraser)
     const id = crypto.randomUUID();
+    const isEraser = tool === 'ERASER' && eraserType === 'STANDARD';
+
     currentItemRef.current = {
       id,
-      type: tool,
+      type: 'PEN', // Standard eraser is just a PEN with bg color
       roomId,
-      strokeColor: color,
-      strokeWidth: strokeWidth,
+      strokeColor: isEraser ? '#121212' : color, // Background color for eraser
+      strokeWidth: isEraser ? 20 : strokeWidth,
       startX: worldPos.x,
       startY: worldPos.y,
       endX: worldPos.x,
       endY: worldPos.y,
-      points: tool === 'PEN' ? [{ x: worldPos.x, y: worldPos.y }] : [],
+      points: (tool === 'PEN' || isEraser) ? [{ x: worldPos.x, y: worldPos.y }] : [],
     };
+
+    // If it's a shape tool, override type
+    if (tool !== 'PEN' && tool !== 'ERASER') {
+      currentItemRef.current.type = tool;
+      currentItemRef.current.points = [];
+    }
   };
 
   const handleMouseMove = (e) => {
@@ -279,18 +382,35 @@ export default function InfiniteCanvas() {
       return;
     }
 
+    // Handle Object Eraser Drag
+    if (tool === 'ERASER' && eraserType === 'OBJECT') {
+      const hitItem = items.slice().reverse().find(item => isPointInItem(worldPos.x, worldPos.y, item));
+      if (hitItem) {
+        setItems(prev => prev.filter(i => i.id !== hitItem.id));
+        if (stompClientRef.current) {
+          stompClientRef.current.publish({
+            destination: `/app/board/${roomId}`,
+            body: JSON.stringify({ type: 'DELETE', id: hitItem.id })
+          });
+        }
+      }
+      return;
+    }
+
     // Handle Draw
     if (currentItemRef.current) {
       const item = currentItemRef.current;
 
       if (item.type === 'PEN') {
         item.points.push({ x: worldPos.x, y: worldPos.y });
+        // Only broadcast PEN updates during drag to show real-time drawing
+        throttledSendRef.current(stompClientRef.current, roomId, item);
       } else {
         item.endX = worldPos.x;
         item.endY = worldPos.y;
+        // Do NOT broadcast shapes during drag to avoid "ghost" duplicates in history
+        // They will be sent once finalized in handleMouseUp
       }
-
-      throttledSendRef.current(stompClientRef.current, roomId, item);
     }
   };
 
@@ -337,6 +457,14 @@ export default function InfiniteCanvas() {
   const handleUndo = () => {
     if (stompClientRef.current && stompClientRef.current.connected) {
       stompClientRef.current.publish({ destination: `/app/undo/${roomId}` });
+    }
+  };
+
+  const handleClear = () => {
+    if (confirm('Are you sure you want to clear the entire board? This cannot be undone.')) {
+      if (stompClientRef.current && stompClientRef.current.connected) {
+        stompClientRef.current.publish({ destination: `/app/clear/${roomId}` });
+      }
     }
   };
 
@@ -406,6 +534,25 @@ export default function InfiniteCanvas() {
         ctx.beginPath();
         ctx.arc(item.startX, item.startY, radius, 0, 2 * Math.PI);
         ctx.stroke();
+      } else if (item.type === 'LINE') {
+        ctx.moveTo(item.startX, item.startY);
+        ctx.lineTo(item.endX, item.endY);
+        ctx.stroke();
+      } else if (item.type === 'ARROW') {
+        ctx.moveTo(item.startX, item.startY);
+        ctx.lineTo(item.endX, item.endY);
+        ctx.stroke();
+
+        const angle = Math.atan2(item.endY - item.startY, item.endX - item.startX);
+        const headLength = 20;
+        const actualHeadLength = Math.max(10, headLength);
+
+        ctx.beginPath();
+        ctx.moveTo(item.endX, item.endY);
+        ctx.lineTo(item.endX - actualHeadLength * Math.cos(angle - Math.PI / 6), item.endY - actualHeadLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(item.endX, item.endY);
+        ctx.lineTo(item.endX - actualHeadLength * Math.cos(angle + Math.PI / 6), item.endY - actualHeadLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
       } else if (item.type === 'TEXT' && item.text) {
         ctx.fillText(item.text, item.startX, item.startY);
       }
@@ -457,6 +604,8 @@ export default function InfiniteCanvas() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+
+
   return (
     <div className="w-full h-screen overflow-hidden bg-[#121212] text-white relative">
       <canvas
@@ -473,16 +622,19 @@ export default function InfiniteCanvas() {
       {textInput.visible && (
         <textarea
           style={{
-            position: 'absolute',
-            left: textInput.x,
-            top: textInput.y,
+            position: 'fixed',
+            left: `${textInput.x}px`,
+            top: `${textInput.y}px`,
             color: color,
             fontSize: '20px',
             background: 'transparent',
-            border: '1px dashed #555',
+            border: '1px dashed rgba(255,255,255,0.5)',
             outline: 'none',
-            minWidth: '100px',
+            minWidth: '50px',
             minHeight: '30px',
+            zIndex: 1000,
+            resize: 'both',
+            overflow: 'hidden',
           }}
           autoFocus
           value={textInput.value}
@@ -493,31 +645,48 @@ export default function InfiniteCanvas() {
       )}
 
       {/* Toolbar */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-[#232329] p-2 rounded-lg shadow-xl flex gap-2 border border-gray-700 items-center">
-        <button onClick={() => setTool('PAN')} className={`p-2 rounded ${tool === 'PAN' ? 'bg-blue-600' : 'hover:bg-gray-700'}`} title="Pan (Space)">✋</button>
-        <button onClick={() => setTool('PEN')} className={`p-2 rounded ${tool === 'PEN' ? 'bg-blue-600' : 'hover:bg-gray-700'}`} title="Pen">✏️</button>
-        <button onClick={() => setTool('RECTANGLE')} className={`p-2 rounded ${tool === 'RECTANGLE' ? 'bg-blue-600' : 'hover:bg-gray-700'}`} title="Rectangle">⬜</button>
-        <button onClick={() => setTool('CIRCLE')} className={`p-2 rounded ${tool === 'CIRCLE' ? 'bg-blue-600' : 'hover:bg-gray-700'}`} title="Circle">◯</button>
-        <button onClick={() => setTool('TEXT')} className={`p-2 rounded ${tool === 'TEXT' ? 'bg-blue-600' : 'hover:bg-gray-700'}`} title="Text">T</button>
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-zinc-400 p-2 rounded-lg shadow-xl flex gap-2 border border-gray-700 items-center">
+        <button onClick={() => setTool('PAN')} className={`p-2 rounded ${tool === 'PAN' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Pan (Space)"><img src="../arrows.svg" alt="Pan" width={15} height={15} /></button>
+        <button onClick={() => setTool('PEN')} className={`p-2 rounded ${tool === 'PEN' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Pen"><img src="../pencil.svg" alt="Pencil" width={15} height={15} /></button>
+        <button onClick={() => setTool('RECTANGLE')} className={`p-2 rounded ${tool === 'RECTANGLE' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Rectangle"><img src="../square.svg" alt="Rectangle" width={15} height={15} /></button>
+        <button onClick={() => setTool('CIRCLE')} className={`p-2 rounded ${tool === 'CIRCLE' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Circle"><img src="../circle.svg" alt="Circle" width={15} height={15} /></button>
+        <button onClick={() => setTool('LINE')} className={`p-2 rounded ${tool === 'LINE' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Line"><img src="../slash.svg" alt="Line" width={15} height={15} /></button>
+        <button onClick={() => setTool('ARROW')} className={`p-2 rounded ${tool === 'ARROW' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Arrow"><img src="../arrow-up-right.svg" alt="Arrow" width={15} height={15} /></button>
+        <button onClick={() => setTool('TEXT')} className={`p-2 rounded ${tool === 'TEXT' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Text"><img src="../italic.svg" alt="Text" width={15} height={15} /></button>
 
-        <div className="w-px h-6 bg-gray-600 mx-1"></div>
+        {/* Eraser Group */}
+        <div className="flex flex-row gap-1 items-center border-l border-r border-gray-600 px-2">
+          <button onClick={() => { setTool('ERASER'); setEraserType('STANDARD'); }} className={`p-2 rounded ${tool === 'ERASER' && eraserType === 'STANDARD' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Standard Eraser (Mask)"><img src="../eraser-1.svg" alt="Eraser" width={15} height={15} /></button>
+          <button onClick={() => { setTool('ERASER'); setEraserType('OBJECT'); }} className={`p-2 rounded ${tool === 'ERASER' && eraserType === 'OBJECT' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Object Eraser (Delete)"><img src="../eraser.svg" alt="Eraser" width={15} height={15} /></button>
+        </div>
 
-        <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-8 h-8 bg-transparent cursor-pointer border-none" title="Color" />
+        <div></div>
+
+        <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-5 h-5 rounded-full cursor-pointer p-0 border-0" title="Color" />
         <input type="range" min="1" max="20" value={strokeWidth} onChange={e => setStrokeWidth(parseInt(e.target.value))} className="w-20" title="Stroke Width" />
 
         <div className="w-px h-6 bg-gray-600 mx-1"></div>
 
-        <button onClick={handleUndo} className="p-2 rounded hover:bg-gray-700" title="Undo">↩️</button>
-        <button onClick={handleExport} className="p-2 rounded hover:bg-gray-700" title="Export Image">💾</button>
-        <button onClick={() => router.push('/')} className="p-2 rounded hover:bg-red-900 text-red-400" title="Exit Room">🚪</button>
+        <button onClick={handleUndo} className="p-2 rounded hover:bg-gray-300" title="Undo"><img src="../undo.svg" alt="Undo" width={15} height={15} /></button>
+        <button onClick={handleExport} className="p-2 rounded hover:bg-gray-300" title="Export Image"><img src="../file-download.svg" alt="Export" width={15} height={15} /></button>
+        <button onClick={handleClear} className="p-2 rounded hover:bg-red-700 text-red-400" title="Clear All"><img src="../trash.svg" alt="Clear" width={15} height={15} /></button>
       </div>
 
+      {/* Logout Button (Top Right) */}
+      <button
+        onClick={() => router.push('/')}
+        className="fixed top-4 right-4 p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center gap-2"
+        title="Exit Room"
+      >
+        <span><img src="../sign-out.svg" alt="Logout" width={15} height={15} /></span>
+      </button>
+
       {/* Zoom Bar */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#232329] px-4 py-2 rounded-full shadow-xl flex gap-4 border border-gray-700 items-center text-sm">
-        <button onClick={() => setCamera(prev => ({ ...prev, zoom: prev.zoom / 1.2 }))} className="hover:text-blue-400 font-bold">−</button>
-        <span className="w-12 text-center">{Math.round(camera.zoom * 100)}%</span>
-        <button onClick={() => setCamera(prev => ({ ...prev, zoom: prev.zoom * 1.2 }))} className="hover:text-blue-400 font-bold">+</button>
-        <button onClick={() => setCamera({ x: 0, y: 0, zoom: 1 })} className="text-xs text-gray-400 hover:text-white ml-2">Reset</button>
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-zinc-400 px-4 py-2 rounded-full shadow-xl flex gap-4 border border-gray-700 items-center text-sm">
+        <button onClick={() => setCamera(prev => ({ ...prev, zoom: prev.zoom / 1.2 }))} className="text-zinc-900 font-bold">−</button>
+        <span className="w-12 text-zinc-900 text-center">{Math.round(camera.zoom * 100)}%</span>
+        <button onClick={() => setCamera(prev => ({ ...prev, zoom: prev.zoom * 1.2 }))} className="text-zinc-900 font-bold">+</button>
+        <button onClick={() => setCamera({ x: 0, y: 0, zoom: 1 })} className="text-xs text-zinc-900 ml-2">Reset</button>
       </div>
 
       {/* Status */}
