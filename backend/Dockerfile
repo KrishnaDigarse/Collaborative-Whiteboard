@@ -2,6 +2,7 @@
 FROM gradle:jdk21-jammy AS builder
 WORKDIR /app
 COPY . .
+RUN chmod +x ./gradlew
 RUN ./gradlew bootJar --no-daemon
 
 # Stage 2: Run the application
