@@ -2,7 +2,7 @@
 
 A real-time, infinite canvas whiteboard application built for seamless collaboration. Features multi-user cursors, live drawing, shape tools, and global undo/redo—all without a persistent database.
 
-![Whiteboard Demo](https://via.placeholder.com/800x450?text=Whiteboard+Demo+Screenshot)
+![Whiteboard Demo](/frontend/public/landing.png)
 
 ## ✨ Features
 
