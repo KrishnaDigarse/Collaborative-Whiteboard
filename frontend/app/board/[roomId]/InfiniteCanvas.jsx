@@ -615,7 +615,7 @@ export default function InfiniteCanvas() {
 
 
   return (
-    <div className="w-full h-screen overflow-hidden bg-[#121212] text-white relative">
+    <div className="w-full h-screen overflow-hidden bg-[#121212] text-white relative flex items-center justify-center">
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
@@ -644,57 +644,53 @@ export default function InfiniteCanvas() {
             resize: 'both',
             overflow: 'hidden',
           }}
-          autoFocus
-          value={textInput.value}
-          onChange={e => setTextInput({ ...textInput, value: e.target.value })}
-          onKeyDown={handleTextSubmit}
           onBlur={() => setTextInput({ ...textInput, visible: false })}
         />
       )}
 
       {/* Toolbar */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-zinc-400 p-2 rounded-lg shadow-xl flex gap-2 border border-gray-700 items-center">
-        <button onClick={() => setTool('PAN')} className={`p-2 rounded ${tool === 'PAN' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Pan (Space)"><img src="../arrows.svg" alt="Pan" width={15} height={15} /></button>
-        <button onClick={() => setTool('PEN')} className={`p-2 rounded ${tool === 'PEN' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Pen"><img src="../pencil.svg" alt="Pencil" width={15} height={15} /></button>
-        <button onClick={() => setTool('RECTANGLE')} className={`p-2 rounded ${tool === 'RECTANGLE' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Rectangle"><img src="../square.svg" alt="Rectangle" width={15} height={15} /></button>
-        <button onClick={() => setTool('CIRCLE')} className={`p-2 rounded ${tool === 'CIRCLE' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Circle"><img src="../circle.svg" alt="Circle" width={15} height={15} /></button>
-        <button onClick={() => setTool('LINE')} className={`p-2 rounded ${tool === 'LINE' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Line"><img src="../slash.svg" alt="Line" width={15} height={15} /></button>
-        <button onClick={() => setTool('ARROW')} className={`p-2 rounded ${tool === 'ARROW' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Arrow"><img src="../arrow-up-right.svg" alt="Arrow" width={15} height={15} /></button>
-        <button onClick={() => setTool('TEXT')} className={`p-2 rounded ${tool === 'TEXT' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Text"><img src="../italic.svg" alt="Text" width={15} height={15} /></button>
+      <div className="fixed top-4  flex items-center gap-1 md:gap-2 p-1.5 md:p-2 rounded-lg bg-zinc-800 border border-zinc-900">
+        <button onClick={() => setTool('PAN')} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'PAN' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Pan (Space)"><img src="../arrows.png" alt="Pan" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+        <button onClick={() => setTool('PEN')} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'PEN' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Pen"><img src="../pencil.png" alt="Pencil" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+        <button onClick={() => setTool('RECTANGLE')} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'RECTANGLE' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Rectangle"><img src="../square.png" alt="Rectangle" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+        <button onClick={() => setTool('CIRCLE')} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'CIRCLE' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Circle"><img src="../circle.png" alt="Circle" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+        <button onClick={() => setTool('LINE')} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'LINE' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Line"><img src="../slash.png" alt="Line" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+        <button onClick={() => setTool('ARROW')} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'ARROW' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Arrow"><img src="../arrow-up-right.png" alt="Arrow" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+        <button onClick={() => setTool('TEXT')} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'TEXT' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Text"><img src="../italic.png" alt="Text" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
 
         {/* Eraser Group */}
-        <div className="flex flex-row gap-1 items-center border-l border-r border-gray-600 px-2">
-          <button onClick={() => { setTool('ERASER'); setEraserType('STANDARD'); }} className={`p-2 rounded ${tool === 'ERASER' && eraserType === 'STANDARD' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Standard Eraser (Mask)"><img src="../eraser-1.svg" alt="Eraser" width={15} height={15} /></button>
-          <button onClick={() => { setTool('ERASER'); setEraserType('OBJECT'); }} className={`p-2 rounded ${tool === 'ERASER' && eraserType === 'OBJECT' ? 'bg-blue-500' : 'hover:bg-gray-300'}`} title="Object Eraser (Delete)"><img src="../eraser.svg" alt="Eraser" width={15} height={15} /></button>
+        <div className="flex flex-row gap-0.5 md:gap-1 items-center border-l border-r border-gray-600 px-1 md:px-2 shrink-0">
+          <button onClick={() => { setTool('ERASER'); setEraserType('STANDARD'); }} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'ERASER' && eraserType === 'STANDARD' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Standard Eraser (Mask)"><img src="../eraser-1.png" alt="Eraser" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+          <button onClick={() => { setTool('ERASER'); setEraserType('OBJECT'); }} className={`p-1.5 md:p-2 rounded shrink-0 ${tool === 'ERASER' && eraserType === 'OBJECT' ? 'bg-blue-500' : 'hover:bg-gray-700'}`} title="Object Eraser (Delete)"><img src="../eraser.png" alt="Eraser" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
         </div>
 
-        <div></div>
+        <div className="shrink-0"></div>
 
-        <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-5 h-5 rounded-full cursor-pointer p-0 border-0" title="Color" />
-        <input type="range" min="1" max="20" value={strokeWidth} onChange={e => setStrokeWidth(parseInt(e.target.value))} className="w-20" title="Stroke Width" />
+        <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-5 h-5 rounded-full cursor-pointer p-0 border-0 shrink-0" title="Color" />
+        <input type="range" min="1" max="20" value={strokeWidth} onChange={e => setStrokeWidth(parseInt(e.target.value))} className="w-16 md:w-20 shrink-0" title="Stroke Width" />
 
-        <div className="w-px h-6 bg-gray-600 mx-1"></div>
+        <div className="w-px h-6 bg-gray-600 mx-1 shrink-0"></div>
 
-        <button onClick={handleUndo} className="p-2 rounded hover:bg-gray-300" title="Undo"><img src="../undo.svg" alt="Undo" width={15} height={15} /></button>
-        <button onClick={handleExport} className="p-2 rounded hover:bg-gray-300" title="Export Image"><img src="../file-download.svg" alt="Export" width={15} height={15} /></button>
-        <button onClick={handleClear} className="p-2 rounded hover:bg-red-700 text-red-400" title="Clear All"><img src="../trash.svg" alt="Clear" width={15} height={15} /></button>
+        <button onClick={handleUndo} className="p-1.5 md:p-2 rounded hover:bg-gray-700 shrink-0" title="Undo"><img src="../undo.png" alt="Undo" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+        <button onClick={handleExport} className="p-1.5 md:p-2 rounded hover:bg-gray-700 shrink-0" title="Export Image"><img src="../file-download.png" alt="Export" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
+        <button onClick={handleClear} className="p-1.5 md:p-2 rounded hover:bg-red-700 text-red-400 shrink-0" title="Clear All"><img src="../trash.png" alt="Clear" className="w-4 h-4 md:w-[15px] md:h-[15px]" /></button>
       </div>
 
       {/* Logout Button (Top Right) */}
       <button
         onClick={() => router.push('/')}
-        className="fixed top-4 right-4 p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center gap-2"
+        className="fixed top-4 right-4 p-3 cursor-pointer rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center gap-2"
         title="Exit Room"
       >
-        <span><img src="../sign-out.svg" alt="Logout" width={15} height={15} /></span>
+        <span><img src="../sign-out.png" alt="Logout" className="w-6 h-6 md:w-[15px] md:h-[15px]" /></span>
       </button>
 
       {/* Zoom Bar */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-zinc-400 px-4 py-2 rounded-full shadow-xl flex gap-4 border border-gray-700 items-center text-sm">
-        <button onClick={() => setCamera(prev => ({ ...prev, zoom: prev.zoom / 1.2 }))} className="text-zinc-900 font-bold">−</button>
-        <span className="w-12 text-zinc-900 text-center">{Math.round(camera.zoom * 100)}%</span>
-        <button onClick={() => setCamera(prev => ({ ...prev, zoom: prev.zoom * 1.2 }))} className="text-zinc-900 font-bold">+</button>
-        <button onClick={() => setCamera({ x: 0, y: 0, zoom: 1 })} className="text-xs text-zinc-900 ml-2">Reset</button>
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-zinc-800 px-4 py-2 rounded-full shadow-xl flex gap-4 border border-gray-900 items-center text-sm">
+        <button onClick={() => setCamera(prev => ({ ...prev, zoom: prev.zoom / 1.2 }))} className="text-zinc-300 hover:text-zinc-400 font-bold">−</button>
+        <span className="w-12 text-zinc-300 text-center">{Math.round(camera.zoom * 100)}%</span>
+        <button onClick={() => setCamera(prev => ({ ...prev, zoom: prev.zoom * 1.2 }))} className="text-zinc-300 hover:text-zinc-400 font-bold">+</button>
+        <button onClick={() => setCamera({ x: 0, y: 0, zoom: 1 })} className="text-xs text-zinc-300 hover:text-zinc-400 ml-2">Reset</button>
       </div>
 
       {/* Status */}
