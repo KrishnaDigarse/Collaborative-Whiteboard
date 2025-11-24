@@ -1,4 +1,4 @@
-# 🎨 Collaborative Whiteboard
+# 🎨 Collaborative Whiteboard - [Hosted Live](https://whiteboard-frontend-7y7t.onrender.com/)
 
 A real-time, infinite canvas whiteboard application built for seamless collaboration. Features multi-user cursors, live drawing, shape tools, and global undo/redo—all without a persistent database.
 
