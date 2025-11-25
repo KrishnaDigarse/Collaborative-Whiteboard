@@ -4,7 +4,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Collaborative Whiteboard',
+  title: 'CollabCanvas',
   description: 'A real-time collaborative whiteboard application',
 }
 

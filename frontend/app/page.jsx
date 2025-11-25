@@ -35,11 +35,11 @@ export default function Home() {
       <div className="w-full h-screen overflow-hidden md:flex justify-center">
         <div className="flex items-center justify-center">
           <h1 className="md:text-7xl font-black text-transparent bg-linear-to-r from-white via-grey-500 to-zinc-800 bg-clip-text mt-10 text-3xl">
-            Collaborative Whiteboard
+            Collaborative Canvas
           </h1>
         </div>
         {/* Content */}
-        <div className="relative w-full text-center md:flex md:flex-col items-center justify-center">
+        <div className="relative w-full text-center md:flex md:flex-col items-center justify-center ">
           {/* Header */}
           <div>
             <p className="md:text-3xl text-md font-black text-transparent bg-linear-to-r from-zinc-800 via-white to-zinc-800 bg-clip-text md:mt-2 mt-10 mb-2">

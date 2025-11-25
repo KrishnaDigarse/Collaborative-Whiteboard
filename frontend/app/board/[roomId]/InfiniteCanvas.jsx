@@ -567,7 +567,7 @@ export default function InfiniteCanvas() {
     });
 
     const link = document.createElement('a');
-    link.download = `whiteboard-${roomId}.png`;
+    link.download = `collab-canvas-${roomId}.png`;
     link.href = canvas.toDataURL();
     link.click();
   };

@@ -1,4 +1,4 @@
-# Collaborative Whiteboard - Frontend
+# CollabCanvas - Frontend
 
 A real-time collaborative whiteboard application built with Next.js and WebSocket.
 
