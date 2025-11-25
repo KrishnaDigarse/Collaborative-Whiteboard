@@ -1,4 +1,6 @@
-# 🎨 Collaborative Whiteboard - [Hosted Live](https://whiteboard-frontend-7y7t.onrender.com/)
+# 🎨 Collaborative Whiteboard
+
+[Live Link](https://whiteboard-frontend-7y7t.onrender.com/)
 
 A real-time, infinite canvas whiteboard application built for seamless collaboration. Features multi-user cursors, live drawing, shape tools, and global undo/redo—all without a persistent database.
 
@@ -70,9 +72,9 @@ npm run dev
 1.  Push `frontend` folder to GitHub.
 2.  Import project into Vercel.
 3.  Set Environment Variable:
-    *   `NEXT_PUBLIC_BACKEND_URL`: `https://your-backend-url.com/ws`
+    *   `NEXT_PUBLIC_BACKEND_URL`: `https://whiteboard-backend-7y7t.onrender.com/ws`
 
-### Backend (Railway / Render)
+### Backend (Render)
 1.  Push `backend` folder to GitHub.
 2.  Deploy as a Gradle project.
 3.  Ensure port `8080` is exposed.
